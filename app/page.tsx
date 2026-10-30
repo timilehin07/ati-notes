@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
@@ -16,14 +17,24 @@ export default function Home() {
   const [isHydrated, setIsHydrated] = useState(false);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [state, formAction, isPending] = useActionState(checkNote, initialState);
+  const [state, formAction, isPending] = useActionState(
+    checkNote,
+    initialState,
+  );
 
-  const allTags = Array.from(new Set(notes.flatMap((note) => note.tags))).sort();
+  const allTags = Array.from(
+    new Set(notes.flatMap((note) => note.tags)),
+  ).sort();
+
   const visibleNotes = notes.filter((note) => {
-    const matchesTag = activeTag ? note.tags.includes(activeTag) : true;
+    const matchesTag = activeTag
+      ? note.tags.includes(activeTag)
+      : true;
+
     const query = search.trim().toLowerCase();
+
     const matchesSearch =
-      query.length === 0 ||
+      !query ||
       note.title.toLowerCase().includes(query) ||
       note.body.toLowerCase().includes(query);
 
@@ -33,28 +44,28 @@ export default function Home() {
   useEffect(() => {
     try {
       const savedNotes = localStorage.getItem(STORAGE_KEY);
+
       if (savedNotes) {
-        const parsedNotes = JSON.parse(savedNotes) as Note[];
+        const parsedNotes = JSON.parse(savedNotes);
+
         if (Array.isArray(parsedNotes)) {
           setNotes(parsedNotes);
         }
       }
     } catch (error) {
-      console.error("Failed to load notes from localStorage.", error);
+      console.error("Failed to load notes.", error);
     } finally {
       setIsHydrated(true);
     }
   }, []);
 
   useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
+    if (!isHydrated) return;
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
     } catch (error) {
-      console.error("Failed to save notes to localStorage.", error);
+      console.error("Failed to save notes.", error);
     }
   }, [notes, isHydrated]);
 
@@ -65,166 +76,337 @@ export default function Home() {
   }, [state.note]);
 
   const handleDelete = (indexToDelete: number) => {
-    setNotes((current) => current.filter((_, index) => index !== indexToDelete));
+    setNotes((current) =>
+      current.filter((_, index) => index !== indexToDelete),
+    );
+  };
+
+  const handleTagClick = (tag: string) => {
+    setActiveTag((current) => (current === tag ? null : tag));
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-4 p-4 sm:gap-8 sm:p-6">
-      <h1 className="text-2xl font-semibold sm:text-3xl">Notes</h1>
+    <main className="app-shell">
+      <header className="topbar">
+        
+<a href="#" className="brand" aria-label="ATi Notes home">
+  <span className="brand-mark" aria-hidden="true">
+    AT<span className="brand-mark-dot">.</span>
+  </span>
+  <span className="brand-name">ATi Notes</span>
+</a>
 
-      <form
-        action={formAction}
-        className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:space-y-4 sm:p-6"
-      >
-        <div className="space-y-2">
-          <label htmlFor="title" className="block text-sm font-medium text-zinc-700">
-            Title
-          </label>
-          <input
-            id="title"
-            name="title"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none ring-0 transition focus:border-zinc-500"
-            placeholder="Enter a title"
-          />
+
+        <div className="topbar-right">
+          <span className="saved-indicator">
+            <span className="status-dot" />
+            {isHydrated ? "Saved on this device" : "Loading notes"}
+          </span>
+         
+<span className="avatar" aria-label="ATi Notes notebook">
+  <svg
+    viewBox="0 0 24 24"
+    width="20"
+    height="20"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.7"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M6 3.5h9l4 4V21H6z" />
+    <path d="M15 3.5V8h4" />
+    <path d="M9 12h7M9 16h7" />
+  </svg>
+</span>
+
         </div>
+      </header>
 
-        <div className="space-y-2">
-          <label htmlFor="body" className="block text-sm font-medium text-zinc-700">
-            Body
-          </label>
-          <textarea
-            id="body"
-            name="body"
-            rows={5}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-zinc-500"
-            placeholder="Write your note"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="tags" className="block text-sm font-medium text-zinc-700">
-            Tags
-          </label>
-          <input
-            id="tags"
-            name="tags"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 outline-none transition focus:border-zinc-500"
-            placeholder="work, personal, ideas"
-          />
-        </div>
-
-        {state.error ? (
-          <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-            {state.error}
+      <section className="welcome-section">
+        <div>
+          <p className="eyebrow">YOUR PERSONAL SPACE</p>
+          <h1>
+            A home for your
+            <br />
+            <span>little thoughts.</span>
+          </h1>
+          <p className="welcome-copy">
+            Keep the ideas, reminders and little things
+            <br className="desktop-break" />
+            you don't want to forget.
           </p>
-        ) : null}
-
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isPending ? "Saving..." : "Add note"}
-        </button>
-      </form>
-
-      <section className="space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-semibold sm:text-xl">Saved notes</h2>
-
-          {allTags.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setActiveTag(null)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-                activeTag === null
-                  ? "bg-zinc-900 text-white"
-                  : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
-              }`}
-            >
-              All
-            </button>
-          ) : null}
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="search" className="block text-sm font-medium text-zinc-700">
-            Search notes
-          </label>
-          <input
-            id="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search by title or body"
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-base outline-none transition focus:border-zinc-500"
-          />
+        <div className="welcome-decoration" aria-hidden="true">
+          <svg
+  className="decoration-sun"
+  viewBox="0 0 100 100"
+  fill="none"
+  aria-hidden="true"
+>
+  <path
+    d="M50 8V92M8 50H92M20 20L80 80M80 20L20 80"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+  />
+  <circle
+    cx="50"
+    cy="50"
+    r="23"
+    stroke="currentColor"
+    strokeWidth="2"
+  />
+  <circle cx="50" cy="50" r="5" fill="currentColor" />
+</svg>
+          <span className="decoration-note">ideas live here ↗</span>
         </div>
+      </section>
 
-        {allTags.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {allTags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => setActiveTag((current) => (current === tag ? null : tag))}
-                className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                  activeTag === tag
-                    ? "bg-zinc-900 text-white"
-                    : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
-                }`}
-              >
-                #{tag}
-              </button>
-            ))}
+      <section className="workspace">
+        <div className="editor-panel">
+          <div className="panel-heading">
+            <div className="heading-icon">✎</div>
+            <div>
+              <h2>Start writing</h2>
+              <p>A little space for whatever's on your mind.</p>
+            </div>
           </div>
-        ) : null}
+
+          <form action={formAction} className="note-form">
+            <div className="field-group">
+              <label htmlFor="title">Give it a title</label>
+              <input
+                id="title"
+                name="title"
+                className="field-input"
+                placeholder="e.g. Things to remember..."
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="field-group">
+              <label htmlFor="body">Your thoughts</label>
+              <textarea
+                id="body"
+                name="body"
+                rows={6}
+                className="field-input body-input"
+                placeholder={"Start with a thought...\n\nTip: use # for headings, **bold** for emphasis, and - for lists."}
+              />
+              <span className="field-hint">
+                Markdown supported · Make it yours
+              </span>
+            </div>
+
+            <div className="field-group">
+              <label htmlFor="tags">Organize with tags</label>
+              <input
+                id="tags"
+                name="tags"
+                className="field-input"
+                placeholder="work, personal, ideas"
+                autoComplete="off"
+              />
+              <span className="field-hint">
+                Separate each tag with a comma.
+              </span>
+            </div>
+
+            {state.error && (
+              <p className="form-error" role="alert">
+                <span aria-hidden="true">!</span> {state.error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isPending}
+              className="create-button"
+            >
+              <span>{isPending ? "Saving your note..." : "Save this note"}</span>
+              <span aria-hidden="true">↗</span>
+            </button>
+          </form>
+        </div>
+
+        <aside className="side-note">
+<span className="side-note-star" aria-hidden="true">
+  AT.
+</span>          <p className="side-note-label">A GENTLE REMINDER</p>
+          <p className="side-note-quote">
+            You don't have to remember everything. That's what this little
+            space is for.
+          </p>
+          <div className="side-note-line" />
+          <p className="side-note-footer">One thought at a time.</p>
+        </aside>
+      </section>
+
+      <section className="library-section">
+        <div className="library-header">
+          <div>
+            <p className="eyebrow">YOUR COLLECTION</p>
+            <h2>Your notes<span className="title-period">.</span></h2>
+            <p className="library-subtitle">
+              {notes.length === 0
+                ? "Your next great thought starts here."
+                : `${notes.length} ${notes.length === 1 ? "little note" : "little notes"} saved in your space.`}
+            </p>
+          </div>
+
+          <div className="note-count">
+            <span>{notes.length.toString().padStart(2, "0")}</span>
+            <span>NOTES</span>
+          </div>
+        </div>
+
+        <div className="library-tools">
+          <label className="search-box" htmlFor="search">
+            <span className="search-icon" aria-hidden="true">⌕</span>
+            <input
+              id="search"
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Find a thought..."
+              aria-label="Search notes by title or body"
+            />
+            {search && (
+              <button
+                type="button"
+                className="clear-search"
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </label>
+        </div>
+
+        <div className="tag-toolbar" aria-label="Filter notes by tag">
+          <button
+            type="button"
+            onClick={() => setActiveTag(null)}
+            aria-pressed={activeTag === null}
+            className={`filter-chip ${activeTag === null ? "filter-chip-active" : ""}`}
+          >
+            All notes <span>{notes.length}</span>
+          </button>
+
+          {allTags.map((tag, index) => (
+            <button
+              key={tag}
+              type="button"
+              onClick={() => handleTagClick(tag)}
+              aria-pressed={activeTag === tag}
+              className={`filter-chip tag-color-${index % 5} ${activeTag === tag ? "filter-chip-active" : ""}`}
+            >
+              #{tag}
+            </button>
+          ))}
+        </div>
 
         {visibleNotes.length === 0 ? (
-          <p className="text-zinc-500">
-            {search.trim() || activeTag
-              ? "No notes match your search."
-              : "No notes yet."}
-          </p>
+          <div className="empty-state">
+            <div className="empty-illustration" aria-hidden="true">
+              {search || activeTag ? "⌕" : "✳"}
+            </div>
+            <h3>
+              {search || activeTag
+                ? "No notes match"
+                : "It's a blank page."}
+            </h3>
+            <p>
+              {search || activeTag
+                ? "Try another search or clear your filters to find what you're looking for."
+                : "Every lovely collection starts somewhere. Write your first note above."}
+            </p>
+
+            {(search || activeTag) && (
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => {
+                  setSearch("");
+                  setActiveTag(null);
+                }}
+              >
+                Clear filters ↗
+              </button>
+            )}
+          </div>
         ) : (
-          <ul className="space-y-3 sm:space-y-4">
+          <div className="notes-grid">
             {visibleNotes.map((note, index) => (
-              <li key={`${note.title}-${index}`} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 sm:p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-base font-semibold sm:text-lg">{note.title}</h3>
+              <article
+                key={`${note.title}-${index}`}
+                className={`note-card note-card-${index % 4}`}
+              >
+                <div className="note-card-top">
+                  <span className="note-number">
+                    NOTE {String(notes.indexOf(note) + 1).padStart(2, "0")}
+                  </span>
+
                   <button
                     type="button"
                     onClick={() => handleDelete(notes.indexOf(note))}
-                    className="shrink-0 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-medium text-red-700 transition hover:bg-red-100"
+                    className="delete-button"
+                    aria-label={`Delete note: ${note.title}`}
+                    title="Delete note"
                   >
-                    Delete
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="17"
+                      height="17"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4h8v2" />
+                      <path d="m19 6-1 14H6L5 6" />
+                      <path d="M10 11v5M14 11v5" />
+                    </svg>
                   </button>
                 </div>
-                <div className="mt-2 text-zinc-700 [&_h1]:mt-0 [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-zinc-900 [&_h2]:mt-4 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-zinc-900 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_p]:my-2 [&_strong]:font-semibold [&_strong]:text-zinc-900">
+
+                <h3 className="note-card-title">{note.title}</h3>
+
+                <div className="markdown-content">
                   <ReactMarkdown>{note.body}</ReactMarkdown>
                 </div>
 
-                {note.tags.length > 0 ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {note.tags.map((tag) => (
+                {note.tags.length > 0 && (
+                  <div className="note-card-tags">
+                    {note.tags.map((tag, tagIndex) => (
                       <button
-                        key={`${tag}-${index}`}
+                        key={`${tag}-${tagIndex}`}
                         type="button"
-                        onClick={() => setActiveTag((current) => (current === tag ? null : tag))}
-                        className={`rounded-full px-2 py-1 text-xs font-medium transition ${
-                          activeTag === tag
-                            ? "bg-zinc-900 text-white"
-                            : "bg-zinc-200 text-zinc-700 hover:bg-zinc-300"
-                        }`}
+                        onClick={() => handleTagClick(tag)}
+                        className={`note-tag tag-color-${(notes.indexOf(note) + tagIndex) % 5}`}
+                        aria-pressed={activeTag === tag}
                       >
                         #{tag}
                       </button>
                     ))}
                   </div>
-                ) : null}
-              </li>
+                )}
+              </article>
             ))}
-          </ul>
+          </div>
         )}
+
+        <footer className="library-footer">
+          <span>Made for the thoughts worth keeping.</span>
+          <span>ATi Notes <span className="footer-star">✳</span></span>
+        </footer>
       </section>
     </main>
   );
